@@ -66,10 +66,12 @@ export default function BrainCanvas() {
   const highlightedIdsRef = useRef<Set<string>>(new Set())
   const drawRef = useRef<() => void>(() => {})
   const focusNodeRef = useRef<(id: string) => void>(() => {})
+  const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null)
 
   const onHighlight = useCallback((ids: string[]) => {
     highlightedIdsRef.current = new Set(ids)
     drawRef.current()
+    simRef.current?.alpha(0.15).restart()
   }, [])
 
   const onFocusNode = useCallback((id: string) => {
@@ -96,6 +98,8 @@ export default function BrainCanvas() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
     setSize()
+    canvas.style.opacity = '0'
+    canvas.style.cursor = 'crosshair'
 
     let hoveredId: string | null = null
     let lockedId: string | null = null
@@ -192,6 +196,21 @@ export default function BrainCanvas() {
           ctx.lineWidth = 2
           ctx.stroke()
         }
+
+        // Label
+        ctx.save()
+        const nothingActive = !hoveredId && !lockedId && hlSet.size === 0
+        const labelAlpha = (isActive || hlSet.has(node.id)) ? 1.0 : nothingActive ? 0.65 : 0.15
+        ctx.font = node.size === 'lg'
+          ? 'bold 13px sans-serif'
+          : node.size === 'md'
+          ? '12px sans-serif'
+          : '11px sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'top'
+        ctx.fillStyle = `rgba(255,255,255,${labelAlpha})`
+        ctx.fillText(node.label, node.x, node.y + r + 6)
+        ctx.restore()
       }
 
       // Signal pulses on top
@@ -200,6 +219,32 @@ export default function BrainCanvas() {
 
     // Expose draw so onHighlight (defined outside the effect) can trigger a repaint.
     drawRef.current = draw
+
+    // Fade the canvas in once the initial explosion has settled (alpha < 0.01).
+    const clampNodes = () => {
+      const dpr = window.devicePixelRatio || 1
+      const W = canvas.width / dpr
+      const H = canvas.height / dpr
+      const labelClearance = 20
+      for (const node of simNodes) {
+        const r = RADIUS[node.size] + 36
+        if ((node.x ?? 0) < r)                       { node.x = r;                       node.vx =  Math.abs(node.vx ?? 0) * 0.1 }
+        if ((node.x ?? 0) > W - r)                   { node.x = W - r;                   node.vx = -Math.abs(node.vx ?? 0) * 0.1 }
+        if ((node.y ?? 0) < r)                       { node.y = r;                       node.vy =  Math.abs(node.vy ?? 0) * 0.1 }
+        if ((node.y ?? 0) > H - r - labelClearance)  { node.y = H - r - labelClearance;  node.vy = -Math.abs(node.vy ?? 0) * 0.1 }
+      }
+    }
+
+    let settled = false
+    const onTick = () => {
+      clampNodes()
+      draw()
+      if (!settled && sim.alpha() < 0.01) {
+        settled = true
+        canvas.style.transition = 'opacity 600ms ease-in'
+        canvas.style.opacity = '1'
+      }
+    }
 
     const sim = d3.forceSimulation<SimNode>(simNodes)
       .force(
@@ -216,15 +261,9 @@ export default function BrainCanvas() {
       .force('charge', d3.forceManyBody<SimNode>().strength(-380))
       .force('center', d3.forceCenter(logW / 2, logH / 2).strength(0.15))
       .force('collide', d3.forceCollide<SimNode>(d => RADIUS[d.size] + 10))
-      .force('bounds', () => {
-        for (const node of simNodes) {
-          const r = RADIUS[node.size] + 10
-          node.x = Math.max(r, Math.min(logW - r, node.x ?? logW / 2))
-          node.y = Math.max(r, Math.min(logH - r, node.y ?? logH / 2))
-        }
-      })
-      .on('tick', draw)
+      .on('tick', onTick)
       .alpha(0.5).restart()
+    simRef.current = sim
 
     // rAF loop that runs while signal pulses are active. draw() already
     // includes propagator.tick(), so this just keeps the canvas refreshing
@@ -301,7 +340,7 @@ export default function BrainCanvas() {
           flip: e.clientX > logW * 0.75,
         })
       } else {
-        canvas.style.cursor = 'default'
+        canvas.style.cursor = 'crosshair'
         setTooltip(prev => ({ ...prev, visible: false }))
       }
 
@@ -365,13 +404,19 @@ export default function BrainCanvas() {
 
     const onResize = () => {
       setSize()
+      clampNodes()
       reheatCenter(lockedId !== null)
+    }
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closePanelRef.current()
     }
 
     canvas.addEventListener('mousemove', onMove)
     canvas.addEventListener('click', onClick)
     canvas.addEventListener('mouseleave', onLeave)
     window.addEventListener('resize', onResize)
+    window.addEventListener('keydown', onKeyDown)
 
     return () => {
       sim.stop()
@@ -380,6 +425,7 @@ export default function BrainCanvas() {
       canvas.removeEventListener('click', onClick)
       canvas.removeEventListener('mouseleave', onLeave)
       window.removeEventListener('resize', onResize)
+      window.removeEventListener('keydown', onKeyDown)
     }
   }, [])
 
@@ -387,8 +433,36 @@ export default function BrainCanvas() {
     <div className="fixed inset-0">
       <canvas ref={canvasRef} className="fixed inset-0" />
       <Tooltip {...tooltip} />
-      <NodeDetail node={selectedNode} onClose={() => closePanelRef.current()} />
+      <NodeDetail node={selectedNode} onClose={() => closePanelRef.current()} onHighlight={onHighlight} onFocusNode={onFocusNode} />
       <ChatPanel onHighlight={onHighlight} onFocusNode={onFocusNode} />
+      <ClusterLegend />
+    </div>
+  )
+}
+
+const LEGEND_ITEMS: { cluster: PortfolioNode['cluster']; label: string }[] = [
+  { cluster: 'project',  label: 'Project' },
+  { cluster: 'backend',  label: 'Backend' },
+  { cluster: 'ai',       label: 'AI / ML' },
+  { cluster: 'frontend', label: 'Frontend' },
+  { cluster: 'concept',  label: 'Concept' },
+]
+
+function ClusterLegend() {
+  return (
+    <div
+      className="fixed bottom-6 right-6 z-30 flex flex-col gap-1.5 rounded-xl px-4 py-3"
+      style={{ background: '#111111', border: '1px solid #222222' }}
+    >
+      {LEGEND_ITEMS.map(({ cluster, label }) => (
+        <div key={cluster} className="flex items-center gap-2">
+          <span
+            className="h-2 w-2 flex-shrink-0 rounded-full"
+            style={{ background: COLORS[cluster] }}
+          />
+          <span className="font-mono text-[11px] text-zinc-600">{label}</span>
+        </div>
+      ))}
     </div>
   )
 }

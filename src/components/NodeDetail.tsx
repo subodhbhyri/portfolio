@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
-import { nodes } from '@/data/nodes'
+import { nodes, edges } from '@/data/nodes'
 import type { PortfolioNode, ProcessStep } from '@/data/nodes'
 
 const COLORS: Record<PortfolioNode['cluster'], string> = {
@@ -18,13 +18,23 @@ function usedIn(nodeId: string): PortfolioNode[] {
   return nodes.filter(n => n.detail?.stack?.includes(nodeId))
 }
 
+function connectedNodes(nodeId: string): PortfolioNode[] {
+  const connectedIds = new Set<string>()
+  for (const e of edges) {
+    if (e.source === nodeId) connectedIds.add(e.target)
+    if (e.target === nodeId) connectedIds.add(e.source)
+  }
+  return nodes.filter(n => connectedIds.has(n.id))
+}
+
 interface Props {
   node: PortfolioNode | null
   onClose: () => void
+  onHighlight: (ids: string[]) => void
+  onFocusNode: (id: string) => void
 }
 
-export default function NodeDetail({ node, onClose }: Props) {
-  // Keep last non-null node so content stays visible during slide-out
+export default function NodeDetail({ node, onClose, onHighlight, onFocusNode }: Props) {
   const lastRef = useRef<PortfolioNode | null>(null)
   if (node !== null) lastRef.current = node
   const displayed = lastRef.current
@@ -39,14 +49,32 @@ export default function NodeDetail({ node, onClose }: Props) {
         transition: 'transform 320ms cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
-      {displayed && <PanelContent node={displayed} onClose={onClose} />}
+      {displayed && (
+        <PanelContent
+          node={displayed}
+          onClose={onClose}
+          onHighlight={onHighlight}
+          onFocusNode={onFocusNode}
+        />
+      )}
     </div>
   )
 }
 
-function PanelContent({ node, onClose }: { node: PortfolioNode; onClose: () => void }) {
+function PanelContent({
+  node,
+  onClose,
+  onHighlight,
+  onFocusNode,
+}: {
+  node: PortfolioNode
+  onClose: () => void
+  onHighlight: (ids: string[]) => void
+  onFocusNode: (id: string) => void
+}) {
   const color = COLORS[node.cluster]
   const { detail } = node
+  const related = connectedNodes(node.id)
 
   return (
     <div className="flex h-full flex-col">
@@ -75,16 +103,29 @@ function PanelContent({ node, onClose }: { node: PortfolioNode; onClose: () => v
       {/* Scrollable body */}
       <div className="flex-1 space-y-6 overflow-y-auto overscroll-contain px-6 py-5">
         {detail ? (
-          <DetailContent detail={detail} />
+          <DetailContent detail={detail} color={color} />
         ) : (
           <NoDetailContent node={node} />
+        )}
+        {related.length > 0 && (
+          <ConnectedNodes
+            related={related}
+            onHighlight={onHighlight}
+            onFocusNode={onFocusNode}
+          />
         )}
       </div>
     </div>
   )
 }
 
-function DetailContent({ detail }: { detail: NonNullable<PortfolioNode['detail']> }) {
+function DetailContent({
+  detail,
+  color,
+}: {
+  detail: NonNullable<PortfolioNode['detail']>
+  color: string
+}) {
   return (
     <>
       {detail.summary && (
@@ -178,8 +219,12 @@ function DetailContent({ detail }: { detail: NonNullable<PortfolioNode['detail']
                 href={detail.links.github}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex flex-1 items-center justify-center rounded-lg py-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-                style={{ border: '1px solid #2a2a2a', background: '#161616' }}
+                className="flex flex-1 items-center justify-center rounded-lg py-2 text-sm font-medium transition-colors hover:text-white"
+                style={{
+                  border: `1px solid ${color}55`,
+                  color: `${color}cc`,
+                  background: `${color}10`,
+                }}
               >
                 GitHub ↗
               </a>
@@ -189,8 +234,12 @@ function DetailContent({ detail }: { detail: NonNullable<PortfolioNode['detail']
                 href={detail.links.live ?? detail.links.demo}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex flex-1 items-center justify-center rounded-lg py-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-                style={{ border: '1px solid #2a2a2a', background: '#161616' }}
+                className="flex flex-1 items-center justify-center rounded-lg py-2 text-sm font-medium transition-colors hover:text-white"
+                style={{
+                  border: `1px solid ${color}55`,
+                  color: `${color}cc`,
+                  background: `${color}10`,
+                }}
               >
                 Live ↗
               </a>
@@ -221,6 +270,42 @@ function NoDetailContent({ node }: { node: PortfolioNode }) {
         </section>
       )}
     </>
+  )
+}
+
+function ConnectedNodes({
+  related,
+  onHighlight,
+  onFocusNode,
+}: {
+  related: PortfolioNode[]
+  onHighlight: (ids: string[]) => void
+  onFocusNode: (id: string) => void
+}) {
+  return (
+    <section>
+      <Label>Connected nodes</Label>
+      <div
+        className="mt-2.5 flex flex-wrap gap-1.5"
+        onMouseLeave={() => onHighlight([])}
+      >
+        {related.map(n => {
+          const c = COLORS[n.cluster]
+          return (
+            <button
+              key={n.id}
+              onMouseEnter={() => onHighlight([n.id])}
+              onClick={() => onFocusNode(n.id)}
+              className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-zinc-400 transition-colors hover:text-white"
+              style={{ border: '1px solid #2a2a2a', background: '#161616' }}
+            >
+              <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ background: c }} />
+              {n.label}
+            </button>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 
