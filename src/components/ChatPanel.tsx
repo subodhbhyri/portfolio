@@ -107,6 +107,7 @@ const INTEREST_NODES: Record<Role, Record<string, string[]>> = {
 
 export default function ChatPanel({ onHighlight, onFocusNode, onRoleChange }: Props) {
   const [open, setOpen] = useState(false)
+  const [hasOpened, setHasOpened] = useState(false)
   const [phase, setPhase] = useState<Phase>('role')
   const [role, setRole] = useState<Role | null>(null)
   const [messages, setMessages] = useState<ChatMsg[]>([])
@@ -291,22 +292,25 @@ export default function ChatPanel({ onHighlight, onFocusNode, onRoleChange }: Pr
       </div>
 
       {/* Trigger pill */}
+      <style>{`
+        @keyframes brainPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.75); }
+        }
+      `}</style>
       <button
-        onClick={() => setOpen(v => !v)}
+        onClick={() => { setOpen(v => !v); if (!hasOpened) setHasOpened(true) }}
         className="flex items-center gap-2.5 rounded-full px-4 py-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
         style={{ background: '#1a1a1a', border: '1px solid #2e2e2e', pointerEvents: 'auto' }}
       >
-        {/* Pulsing cluster dot */}
-        <span className="relative flex h-2 w-2 flex-shrink-0">
-          <span
-            className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
-            style={{ background: '#D85A30' }}
-          />
-          <span
-            className="relative inline-flex h-2 w-2 rounded-full"
-            style={{ background: '#D85A30' }}
-          />
-        </span>
+        {/* Dot — breathes until the panel has been opened once */}
+        <span
+          className="h-2 w-2 flex-shrink-0 rounded-full"
+          style={{
+            background: '#D85A30',
+            animation: hasOpened ? 'none' : 'brainPulse 2.5s ease-in-out infinite',
+          }}
+        />
         Ask the brain
       </button>
     </div>

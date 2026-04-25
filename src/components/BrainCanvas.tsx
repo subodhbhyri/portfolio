@@ -55,9 +55,10 @@ const PANEL_OFFSET = 190
 
 interface Props {
   onRoleChange?: (role: VisitorRole | null) => void
+  onFirstClick?: () => void
 }
 
-export default function BrainCanvas({ onRoleChange }: Props) {
+export default function BrainCanvas({ onRoleChange, onFirstClick }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [tooltip, setTooltip] = useState<TooltipState>({
     x: 0, y: 0, label: '', description: '', visible: false, flip: false,
@@ -110,6 +111,7 @@ export default function BrainCanvas({ onRoleChange }: Props) {
 
     let hoveredId: string | null = null
     let lockedId: string | null = null
+    let firstClickFired = false
 
     const simNodes: SimNode[] = rawNodes.map(n => ({
       ...n,
@@ -366,6 +368,7 @@ export default function BrainCanvas({ onRoleChange }: Props) {
       const wasPanelOpen = lockedId !== null
 
       if (node) {
+        if (!firstClickFired) { firstClickFired = true; onFirstClick?.() }
         const togglingOff = lockedId === node.id
         lockedId = togglingOff ? null : node.id
         hoveredId = lockedId ? node.id : null
