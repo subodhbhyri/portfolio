@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { nodes as rawNodes } from '@/data/nodes'
 import { parseIntent } from '@/lib/intentParser'
+import type { VisitorRole } from '@/lib/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,6 +27,7 @@ interface ChatMsg {
 interface Props {
   onHighlight: (nodeIds: string[]) => void
   onFocusNode: (nodeId: string) => void
+  onRoleChange?: (role: VisitorRole | null) => void
 }
 
 // ─── Static data ──────────────────────────────────────────────────────────────
@@ -38,10 +40,13 @@ const ROLE_PILLS: Pill[] = [
 
 const INTEREST_PILLS: Record<Role, Pill[]> = {
   recruiter: [
-    { label: 'Backend systems', value: 'Backend systems' },
-    { label: 'AI/ML work',      value: 'AI/ML work' },
-    { label: 'Full-stack',      value: 'Full-stack' },
-    { label: 'All of it',       value: 'All of it' },
+    { label: 'Backend systems',  value: 'Backend systems' },
+    { label: 'AI/ML work',       value: 'AI/ML work' },
+    { label: 'Full-stack',       value: 'Full-stack' },
+    { label: 'Frontend',         value: 'Frontend' },
+    { label: 'Data engineering', value: 'Data engineering' },
+    { label: 'Automation / QA',  value: 'Automation / QA' },
+    { label: 'All of it',        value: 'All of it' },
   ],
   engineer: [
     { label: 'Distributed systems', value: 'Distributed systems' },
@@ -63,13 +68,27 @@ const ROLE_NODES: Record<Role, string[]> = {
   exploring: rawNodes.filter(n => n.relevantTo?.includes('exploring')).map(n => n.id),
 }
 
+// Maps recruiter interest pill value → VisitorRole (null = "all of it" / generic)
+const RECRUITER_ROLE_MAP: Record<string, VisitorRole | null> = {
+  'Backend systems':  'recruiter-backend',
+  'AI/ML work':       'recruiter-ai',
+  'Full-stack':       'recruiter-fullstack',
+  'Frontend':         'recruiter-frontend',
+  'Data engineering': 'recruiter-data',
+  'Automation / QA':  'recruiter-automation',
+  'All of it':        null,
+}
+
 // Node ids surfaced for each interest button click
 const INTEREST_NODES: Record<Role, Record<string, string[]>> = {
   recruiter: {
-    'Backend systems': rawNodes.filter(n => n.relevantTo?.includes('recruiter-backend')).map(n => n.id),
-    'AI/ML work':      rawNodes.filter(n => n.relevantTo?.includes('recruiter-ai')).map(n => n.id),
-    'Full-stack':      rawNodes.filter(n => n.relevantTo?.includes('recruiter-fullstack')).map(n => n.id),
-    'All of it':       rawNodes.filter(n => n.relevantTo?.some(r => r.startsWith('recruiter'))).map(n => n.id),
+    'Backend systems':  rawNodes.filter(n => n.relevantTo?.includes('recruiter-backend')).map(n => n.id),
+    'AI/ML work':       rawNodes.filter(n => n.relevantTo?.includes('recruiter-ai')).map(n => n.id),
+    'Full-stack':       rawNodes.filter(n => n.relevantTo?.includes('recruiter-fullstack')).map(n => n.id),
+    'Frontend':         rawNodes.filter(n => n.cluster === 'frontend').map(n => n.id),
+    'Data engineering': ['kafka', 'postgres', 'redis', 'vectordb', 'embed'],
+    'Automation / QA':  ['cicd', 'k8s', 'docker', 'prom', 'grafana'],
+    'All of it':        rawNodes.filter(n => n.relevantTo?.some(r => r.startsWith('recruiter'))).map(n => n.id),
   },
   engineer: {
     'Distributed systems': ['slotify', 'dist', 'microservice', 'kafka', 'redis', 'k8s', 'docker', 'concur'],
@@ -86,7 +105,7 @@ const INTEREST_NODES: Record<Role, Record<string, string[]>> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function ChatPanel({ onHighlight, onFocusNode }: Props) {
+export default function ChatPanel({ onHighlight, onFocusNode, onRoleChange }: Props) {
   const [open, setOpen] = useState(false)
   const [phase, setPhase] = useState<Phase>('role')
   const [role, setRole] = useState<Role | null>(null)
@@ -157,11 +176,14 @@ export default function ChatPanel({ onHighlight, onFocusNode }: Props) {
       setRole(r)
       setPhase('interest')
       onHighlight(ROLE_NODES[r])
+      if (r === 'engineer') onRoleChange?.('engineer')
+      if (r === 'exploring') onRoleChange?.('exploring')
       showBrainMessage('What are you most interested in?', INTEREST_PILLS[r])
     } else if (phase === 'interest' && role) {
       const ids = INTEREST_NODES[role][pill.value] ?? []
       setPhase('chat')
       onHighlight(ids)
+      if (role === 'recruiter') onRoleChange?.(RECRUITER_ROLE_MAP[pill.value] ?? null)
       showBrainMessage(
         "Got it — those nodes are highlighted. Type anything to narrow it down, or click any node to dig in.",
       )
@@ -200,7 +222,7 @@ export default function ChatPanel({ onHighlight, onFocusNode }: Props) {
   }
 
   return (
-    <div className="fixed bottom-6 left-6 z-50 flex flex-col items-start">
+    <div className="fixed bottom-6 left-6 z-50 flex flex-col items-start" style={{ pointerEvents: 'none' }}>
       {/* Panel */}
       <div
         className="mb-3 flex w-80 flex-col overflow-hidden rounded-xl"
@@ -272,7 +294,7 @@ export default function ChatPanel({ onHighlight, onFocusNode }: Props) {
       <button
         onClick={() => setOpen(v => !v)}
         className="flex items-center gap-2.5 rounded-full px-4 py-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-        style={{ background: '#1a1a1a', border: '1px solid #2e2e2e' }}
+        style={{ background: '#1a1a1a', border: '1px solid #2e2e2e', pointerEvents: 'auto' }}
       >
         {/* Pulsing cluster dot */}
         <span className="relative flex h-2 w-2 flex-shrink-0">

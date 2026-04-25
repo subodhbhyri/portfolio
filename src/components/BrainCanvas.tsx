@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import * as d3 from 'd3'
 import { nodes as rawNodes, edges as rawEdges } from '@/data/nodes'
 import type { PortfolioNode } from '@/data/nodes'
+import type { VisitorRole } from '@/lib/types'
 import Tooltip from './Tooltip'
 import NodeDetail from './NodeDetail'
 import ChatPanel from './ChatPanel'
@@ -52,7 +53,11 @@ interface TooltipState {
 // stays visually centered in the remaining viewport.
 const PANEL_OFFSET = 190
 
-export default function BrainCanvas() {
+interface Props {
+  onRoleChange?: (role: VisitorRole | null) => void
+}
+
+export default function BrainCanvas({ onRoleChange }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [tooltip, setTooltip] = useState<TooltipState>({
     x: 0, y: 0, label: '', description: '', visible: false, flip: false,
@@ -67,6 +72,8 @@ export default function BrainCanvas() {
   const drawRef = useRef<() => void>(() => {})
   const focusNodeRef = useRef<(id: string) => void>(() => {})
   const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null)
+  // Tracks the forceCenter x-offset so hit detection stays aligned with node positions.
+  const panelOffsetRef = useRef(0)
 
   const onHighlight = useCallback((ids: string[]) => {
     highlightedIdsRef.current = new Set(ids)
@@ -292,6 +299,7 @@ export default function BrainCanvas() {
       const wasOpen = lockedId !== null
       lockedId = null
       hoveredId = null
+      panelOffsetRef.current = 0
       setSelectedNode(null)
       setTooltip(prev => ({ ...prev, visible: false }))
       if (wasOpen) reheatCenter(false)
@@ -306,6 +314,7 @@ export default function BrainCanvas() {
       const wasPanelOpen = lockedId !== null
       lockedId = nodeId
       hoveredId = nodeId
+      panelOffsetRef.current = PANEL_OFFSET
       setSelectedNode(node)
       if (!wasPanelOpen) reheatCenter(true)
       propagator.fire(nodeId)
@@ -314,11 +323,12 @@ export default function BrainCanvas() {
     }
 
     const getNode = (mx: number, my: number): SimNode | null => {
+      const adjustedX = mx + panelOffsetRef.current
       for (let i = simNodes.length - 1; i >= 0; i--) {
         const node = simNodes[i]
         if (node.x == null || node.y == null) continue
         const r = RADIUS[node.size] + 4
-        const dx = mx - node.x
+        const dx = adjustedX - node.x
         const dy = my - node.y
         if (dx * dx + dy * dy <= r * r) return node
       }
@@ -364,8 +374,8 @@ export default function BrainCanvas() {
         setSelectedNode(isPanelOpen ? node : null)
 
         // Adjust forceCenter only when open/close state actually flips
-        if (!wasPanelOpen && isPanelOpen) reheatCenter(true)
-        else if (wasPanelOpen && !isPanelOpen) reheatCenter(false)
+        if (!wasPanelOpen && isPanelOpen) { panelOffsetRef.current = PANEL_OFFSET; reheatCenter(true) }
+        else if (wasPanelOpen && !isPanelOpen) { panelOffsetRef.current = 0; reheatCenter(false) }
         // Same panel already open + different node clicked → no center jump
 
         if (isPanelOpen) {
@@ -384,7 +394,7 @@ export default function BrainCanvas() {
         }
       } else {
         // Clicked empty canvas — close panel
-        if (wasPanelOpen) reheatCenter(false)
+        if (wasPanelOpen) { panelOffsetRef.current = 0; reheatCenter(false) }
         lockedId = null
         hoveredId = null
         setSelectedNode(null)
@@ -434,7 +444,7 @@ export default function BrainCanvas() {
       <canvas ref={canvasRef} className="fixed inset-0" />
       <Tooltip {...tooltip} />
       <NodeDetail node={selectedNode} onClose={() => closePanelRef.current()} onHighlight={onHighlight} onFocusNode={onFocusNode} />
-      <ChatPanel onHighlight={onHighlight} onFocusNode={onFocusNode} />
+      <ChatPanel onHighlight={onHighlight} onFocusNode={onFocusNode} onRoleChange={onRoleChange} />
       <ClusterLegend />
     </div>
   )
