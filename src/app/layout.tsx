@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,7 +20,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Subodh Bhyri — Adaptive Brain",
     description: "An interactive neural network visualization of my skills and projects.",
-    url: "https://portfolio-rho-sable-6oocy5c571.vercel.app",
+    url: "https://subodhbhyri.vercel.app",
     siteName: "Subodh Bhyri",
     type: "website",
   },
@@ -39,7 +41,11 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased scroll-smooth`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <Analytics />
+        <SpeedInsights />
+      </body>
     </html>
   );
 }
