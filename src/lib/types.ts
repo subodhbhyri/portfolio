@@ -5,5 +5,6 @@ export type VisitorRole =
   | 'recruiter-data'
   | 'recruiter-automation'
   | 'recruiter-frontend'
+  | 'recruiter-infrastructure'
   | 'engineer'
   | 'exploring'

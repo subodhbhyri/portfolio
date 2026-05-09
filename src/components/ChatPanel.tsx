@@ -40,13 +40,14 @@ const ROLE_PILLS: Pill[] = [
 
 const INTEREST_PILLS: Record<Role, Pill[]> = {
   recruiter: [
-    { label: 'Backend systems',  value: 'Backend systems' },
-    { label: 'AI/ML work',       value: 'AI/ML work' },
-    { label: 'Full-stack',       value: 'Full-stack' },
-    { label: 'Frontend',         value: 'Frontend' },
-    { label: 'Data engineering', value: 'Data engineering' },
-    { label: 'Automation / QA',  value: 'Automation / QA' },
-    { label: 'All of it',        value: 'All of it' },
+    { label: 'AI Engineering',       value: 'AI Engineering' },
+    { label: 'Backend / Java',       value: 'Backend / Java' },
+    { label: 'Data Engineering',     value: 'Data engineering' },
+    { label: 'Full-Stack Java',      value: 'Full-stack' },
+    { label: 'Frontend',             value: 'Frontend' },
+    { label: 'Testing & Automation', value: 'Automation / QA' },
+    { label: 'Storage / Infra',      value: 'Storage / Infra' },
+    { label: 'General SDE',          value: 'All of it' },
   ],
   engineer: [
     { label: 'Distributed systems', value: 'Distributed systems' },
@@ -70,13 +71,14 @@ const ROLE_NODES: Record<Role, string[]> = {
 
 // Maps recruiter interest pill value → VisitorRole (null = "all of it" / generic)
 const RECRUITER_ROLE_MAP: Record<string, VisitorRole | null> = {
-  'Backend systems':  'recruiter-backend',
-  'AI/ML work':       'recruiter-ai',
+  'AI Engineering':  'recruiter-ai',
+  'Backend / Java':  'recruiter-backend',
+  'Data engineering': 'recruiter-data',
   'Full-stack':       'recruiter-fullstack',
   'Frontend':         'recruiter-frontend',
-  'Data engineering': 'recruiter-data',
   'Automation / QA':  'recruiter-automation',
-  'All of it':        null,
+  'Storage / Infra':  'recruiter-infrastructure',
+  'All of it':        'engineer',
 }
 
 // Node ids surfaced for each interest button click
