@@ -129,9 +129,11 @@ export default function AboutSection({ visitorRole }: Props) {
     return () => observer.disconnect()
   }, [])
 
-  const [isMobile] = useState(
-    () => typeof window !== 'undefined' && window.innerWidth < 768,
-  )
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 768)
+  }, [])
 
   const countProjects = useCountUp(projectCount, 600,  statsTriggered, 0)
   const count255      = useCountUp(255,          1000, statsTriggered, 0)

@@ -169,6 +169,43 @@ export const nodes: PortfolioNode[] = [
     },
   },
 
+  {
+    id: 'llm-eval',
+    label: 'LLM Eval',
+    cluster: 'project',
+    size: 'lg',
+    description: 'Multi-model LLM benchmarking platform — RAGAS, Claude, GPT-4o, Gemini, FastAPI, Kafka',
+    relevantTo: ['recruiter-ai', 'recruiter-backend', 'engineer'],
+    detail: {
+      summary: 'A production-grade evaluation platform that benchmarks Claude, GPT-4o, and Gemini side-by-side using RAGAS metrics — faithfulness, context precision, context recall, and answer relevancy. Built to answer the question: which model actually performs better on your data?',
+      highlights: [
+        'Unified LLM client abstracts Claude, GPT-4o, and Gemini behind a single interface — swapping models requires zero application code changes',
+        'RAGAS evaluation engine scores four dimensions per run: faithfulness, context precision, context recall, answer relevancy',
+        'Kafka event streaming pipelines evaluation runs asynchronously — the HTTP request returns immediately, frontend polls for completion',
+        'Redis caching keeps dashboard queries under 10ms regardless of evaluation history size',
+        'Prometheus metrics at /metrics with Grafana dashboards for run latency, model error rates, and score distributions',
+        'React dashboard with radar chart for multi-dimensional model comparison and composite bar chart across runs',
+        'Kubernetes manifests for all services — FastAPI, Redis, Kafka, Prometheus — with Helm chart for one-command deployment',
+      ],
+      process: [
+        { title: 'Problem', detail: 'Evaluating LLMs is either manual (slow, subjective) or locked into proprietary platforms. Teams switching between Claude, GPT-4o, and Gemini have no objective way to compare quality on their own data.' },
+        { title: 'Design', detail: 'RAGAS as the evaluation framework gives four quantitative scores per run. A unified LLM client means adding a new model is a single adapter — the evaluation pipeline is model-agnostic.' },
+        { title: 'Hardest part', detail: 'Answer relevancy for Anthropic-only setups requires OpenAI embeddings by default. Solved by swapping in a local embeddings model so the full metric suite works without vendor lock-in.' },
+        { title: 'What I learned', detail: 'Async background evaluation is non-negotiable at scale — blocking HTTP until a full eval completes will timeout on any free-tier host with datasets larger than a few questions.' },
+      ],
+      stack: ['fastapi', 'kafka', 'redis', 'postgres', 'prom', 'grafana', 'react', 'docker', 'k8s', 'rag', 'gemini', 'openai'],
+      links: {
+        live: 'https://ragas-bench.vercel.app/',
+        github: 'https://github.com/subodhbhyri/ai-eval-platform',
+      },
+      metrics: [
+        { label: 'Models benchmarked', value: '3' },
+        { label: 'RAGAS dimensions', value: '4' },
+        { label: 'Dashboard query latency', value: '<10ms' },
+      ],
+    },
+  },
+
   // ── Backend & Infra ────────────────────────────────────────────────────────
 
   { id: 'kafka',    label: 'Kafka',       cluster: 'backend', size: 'md', description: 'Event streaming backbone for Slotify\'s booking pipeline', relevantTo: ['recruiter-backend', 'engineer'] },
@@ -185,6 +222,7 @@ export const nodes: PortfolioNode[] = [
   { id: 'aws',      label: 'AWS',         cluster: 'backend', size: 'sm', description: 'EC2, S3, RDS — cloud infra', relevantTo: ['recruiter-backend'] },
   { id: 'rbac',     label: 'RBAC',        cluster: 'backend', size: 'sm', description: 'Role-based access control — Vishwanath (500+ users)', relevantTo: ['recruiter-backend'] },
   { id: 'oauth',    label: 'OAuth2/JWT',  cluster: 'backend', size: 'sm', description: '99.9% token success rate — Vishwanath and Comrades', relevantTo: ['recruiter-backend'] },
+  { id: 'fastapi',  label: 'FastAPI',     cluster: 'backend', size: 'md', description: 'Async Python backend — LLM Eval platform', relevantTo: ['recruiter-ai', 'recruiter-backend', 'engineer'] },
 
   // ── AI & ML ────────────────────────────────────────────────────────────────
 
@@ -290,4 +328,24 @@ export const edges: PortfolioEdge[] = [
   { source: 'mongodb',  target: 'vectordb',    weight: 2 },
   { source: 'dist',     target: 'microservice',weight: 2 },
   { source: 'nodejs',   target: 'restapi',     weight: 2 },
+
+  // LLM Eval project edges
+  { source: 'llm-eval', target: 'fastapi',      weight: 3 },
+  { source: 'llm-eval', target: 'kafka',        weight: 2 },
+  { source: 'llm-eval', target: 'redis',        weight: 2 },
+  { source: 'llm-eval', target: 'postgres',     weight: 2 },
+  { source: 'llm-eval', target: 'prom',         weight: 2 },
+  { source: 'llm-eval', target: 'grafana',      weight: 2 },
+  { source: 'llm-eval', target: 'react',        weight: 2 },
+  { source: 'llm-eval', target: 'docker',       weight: 2 },
+  { source: 'llm-eval', target: 'k8s',          weight: 2 },
+  { source: 'llm-eval', target: 'rag',          weight: 2 },
+  { source: 'llm-eval', target: 'gemini',       weight: 2 },
+  { source: 'llm-eval', target: 'openai',       weight: 2 },
+  { source: 'llm-eval', target: 'microservice', weight: 2 },
+  { source: 'llm-eval', target: 'realtime',     weight: 1 },
+
+  // FastAPI cross-tech edges
+  { source: 'fastapi',  target: 'restapi',      weight: 2 },
+  { source: 'fastapi',  target: 'microservice', weight: 2 },
 ];
