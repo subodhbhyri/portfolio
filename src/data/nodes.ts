@@ -55,7 +55,7 @@ export const nodes: PortfolioNode[] = [
     label: 'Slotify',
     cluster: 'project',
     size: 'lg',
-    description: 'Distributed ticket reservation system — Java 21, Kafka, Redis, K8s',
+    description: 'Distributed ticket reservation system — Java 21, Kafka, Redis, K8s, STOMP WebSocket. Monolith architecture with event-driven Kafka backbone designed for microservices extraction.',
     relevantTo: ['recruiter-backend', 'engineer'],
     detail: {
       summary: 'Event-driven microservices platform handling high-concurrency ticket booking with sub-50ms p99 latency. Built to survive thundering-herd scenarios using Redis distributed locking and priority waitlists.',
@@ -85,7 +85,7 @@ export const nodes: PortfolioNode[] = [
     label: 'Comrades',
     cluster: 'project',
     size: 'lg',
-    description: 'Vicinity-based social platform — LangChain, Gemini, Socket.io, MongoDB',
+    description: 'Vicinity-based social platform — LangChain, LangGraph agent, Gemini, Socket.io, MongoDB geospatial, Express.js',
     relevantTo: ['recruiter-ai', 'recruiter-fullstack', 'engineer'],
     detail: {
       summary: 'Location-aware social platform where an AI agent classifies post intent, queries nearby users, and dispatches real-time notifications — all with sub-second latency.',
@@ -222,7 +222,9 @@ export const nodes: PortfolioNode[] = [
   { id: 'aws',      label: 'AWS',         cluster: 'backend', size: 'sm', description: 'EC2, S3, RDS — cloud infra', relevantTo: ['recruiter-backend'] },
   { id: 'rbac',     label: 'RBAC',        cluster: 'backend', size: 'sm', description: 'Role-based access control — Vishwanath (500+ users)', relevantTo: ['recruiter-backend'] },
   { id: 'oauth',    label: 'OAuth2/JWT',  cluster: 'backend', size: 'sm', description: '99.9% token success rate — Vishwanath and Comrades', relevantTo: ['recruiter-backend'] },
-  { id: 'fastapi',  label: 'FastAPI',     cluster: 'backend', size: 'md', description: 'Async Python backend — LLM Eval platform', relevantTo: ['recruiter-ai', 'recruiter-backend', 'engineer'] },
+  { id: 'fastapi',   label: 'FastAPI',   cluster: 'backend', size: 'md', description: 'Async Python backend — LLM Eval platform', relevantTo: ['recruiter-ai', 'recruiter-backend', 'engineer'] },
+  { id: 'websocket', label: 'WebSocket', cluster: 'backend', size: 'sm', description: 'STOMP over WebSocket for real-time seat updates — Slotify', relevantTo: ['recruiter-backend', 'engineer'] },
+  { id: 'expressjs', label: 'Express.js', cluster: 'backend', size: 'md', description: 'HTTP server — Timeline and Comrades backends', relevantTo: ['recruiter-backend', 'recruiter-fullstack'] },
 
   // ── AI & ML ────────────────────────────────────────────────────────────────
 
@@ -233,7 +235,9 @@ export const nodes: PortfolioNode[] = [
   { id: 'mcp',       label: 'MCP',        cluster: 'ai', size: 'sm', description: 'Model Context Protocol server — Timeline exposes tools to external agents', relevantTo: ['recruiter-ai', 'engineer'] },
   { id: 'embed',     label: 'Embeddings', cluster: 'ai', size: 'sm', description: 'Gemini embeddings for semantic search in Timeline', relevantTo: ['recruiter-ai'] },
   { id: 'nlp',       label: 'NLP',        cluster: 'ai', size: 'sm', description: 'Intent classification and feed ranking in Comrades', relevantTo: ['recruiter-ai'] },
-  { id: 'openai',    label: 'OpenAI',     cluster: 'ai', size: 'sm', description: 'LLM API experience — GPT-4 integrations', relevantTo: ['recruiter-ai'] },
+  { id: 'openai',    label: 'OpenAI',    cluster: 'ai', size: 'sm', description: 'LLM API experience — GPT-4 integrations', relevantTo: ['recruiter-ai'] },
+  { id: 'ragas',     label: 'RAGAS',     cluster: 'ai', size: 'md', description: 'LLM evaluation framework — faithfulness, context precision, recall, answer relevancy', relevantTo: ['recruiter-ai', 'engineer'] },
+  { id: 'langgraph', label: 'LangGraph', cluster: 'ai', size: 'sm', description: 'Graph-based agent state machine — VicinityCoordinator in Comrades', relevantTo: ['recruiter-ai', 'engineer'] },
 
   // ── Frontend & Real-time ──────────────────────────────────────────────────
 
@@ -245,6 +249,7 @@ export const nodes: PortfolioNode[] = [
   { id: 'gmaps',    label: 'Google Maps', cluster: 'frontend', size: 'sm', description: 'Geo queries and map display — Comrades', relevantTo: ['recruiter-fullstack'] },
   { id: 'redux',    label: 'Redux',       cluster: 'frontend', size: 'sm', description: 'State management', relevantTo: ['recruiter-fullstack'] },
   { id: 'angular',  label: 'Angular',     cluster: 'frontend', size: 'sm', description: 'Frontend framework experience', relevantTo: ['recruiter-fullstack'] },
+  { id: 'threejs',  label: 'Three.js',   cluster: 'frontend', size: 'sm', description: '3D globe rendering engine — Timeline Phase 1 via react-globe.gl', relevantTo: ['recruiter-fullstack', 'exploring'] },
 
   // ── Concepts ───────────────────────────────────────────────────────────────
 
@@ -262,18 +267,18 @@ export const nodes: PortfolioNode[] = [
 
 export const edges: PortfolioEdge[] = [
   // Slotify
-  { source: 'slotify', target: 'kafka',       weight: 3 },
-  { source: 'slotify', target: 'redis',       weight: 3 },
-  { source: 'slotify', target: 'postgres',    weight: 2 },
-  { source: 'slotify', target: 'k8s',         weight: 2 },
-  { source: 'slotify', target: 'grpc',        weight: 2 },
-  { source: 'slotify', target: 'spring',      weight: 2 },
-  { source: 'slotify', target: 'prom',        weight: 1 },
-  { source: 'slotify', target: 'grafana',     weight: 1 },
-  { source: 'slotify', target: 'microservice',weight: 3 },
-  { source: 'slotify', target: 'eda',         weight: 3 },
-  { source: 'slotify', target: 'concur',      weight: 3 },
-  { source: 'slotify', target: 'dist',        weight: 2 },
+  { source: 'slotify', target: 'kafka',        weight: 3 },
+  { source: 'slotify', target: 'redis',        weight: 3 },
+  { source: 'slotify', target: 'postgres',     weight: 2 },
+  { source: 'slotify', target: 'k8s',          weight: 2 },
+  { source: 'slotify', target: 'spring',       weight: 2 },
+  { source: 'slotify', target: 'prom',         weight: 1 },
+  { source: 'slotify', target: 'grafana',      weight: 1 },
+  { source: 'slotify', target: 'websocket',    weight: 2 },
+  { source: 'slotify', target: 'microservice', weight: 1 },
+  { source: 'slotify', target: 'eda',          weight: 3 },
+  { source: 'slotify', target: 'concur',       weight: 3 },
+  { source: 'slotify', target: 'dist',         weight: 2 },
 
   // Comrades
   { source: 'comrades', target: 'langchain',  weight: 3 },
@@ -348,4 +353,19 @@ export const edges: PortfolioEdge[] = [
   // FastAPI cross-tech edges
   { source: 'fastapi',  target: 'restapi',      weight: 2 },
   { source: 'fastapi',  target: 'microservice', weight: 2 },
+
+  // Timeline additional edges
+  { source: 'timeline',  target: 'threejs',   weight: 2 },
+  { source: 'timeline',  target: 'expressjs', weight: 2 },
+  { source: 'threejs',   target: 'globegl',   weight: 3 },
+
+  // LLM Eval additional edges
+  { source: 'llm-eval', target: 'ragas',     weight: 3 },
+  { source: 'ragas',    target: 'rag',       weight: 2 },
+  { source: 'ragas',    target: 'embed',     weight: 2 },
+
+  // Comrades additional edges
+  { source: 'comrades',  target: 'langgraph', weight: 2 },
+  { source: 'langgraph', target: 'langchain', weight: 3 },
+  { source: 'comrades',  target: 'expressjs', weight: 2 },
 ];
